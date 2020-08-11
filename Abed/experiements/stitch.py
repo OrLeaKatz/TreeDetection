@@ -7,7 +7,7 @@ original_img_xy_re = ".*_(\d+)_(\d+)"
 tiles_xy_re = ".*__(\d+)_(\d+)__"
         
 
-def stitch(dir_path, save_path ,  in_canels=1, choice=0):
+def stitch(dir_path, save_path , pixel_size,  in_canels=1, choice=0):
     """
     function stitches together tiles to repreduce the original image
 
@@ -61,8 +61,8 @@ def stitch(dir_path, save_path ,  in_canels=1, choice=0):
     original_name = ((sample[::-1]).split("_", 2))[-1][::-1]
 
     
-    Original_width  = max_x - min_x + tile_w
-    Original_height = max_y - min_y + tile_h
+    Original_width  = int((max_x - min_x + tile_w)/pixel_size)
+    Original_height = int((max_y - min_y + tile_h)/pixel_size)
 
     #we create an NumPy array to stitch all tiles to.
     if(in_canels == 1):
@@ -80,9 +80,9 @@ def stitch(dir_path, save_path ,  in_canels=1, choice=0):
 
         #extraxt x, y of tile relative to original
         tmp = (filename.split(".")[0]).split('_')
-        x = int(tmp[-2]) - min_x
-        y = int(tmp[-1]) - min_y
-
+        x = int((int(tmp[-2]) - min_x)/pixel_size)
+        y = int((int(tmp[-1]) - min_y)/pixel_size)
+        print(str(x)+", "+str(y))
 
         im = Image.open(dir_path + '\\' + filename)
         
@@ -115,4 +115,4 @@ def stitch(dir_path, save_path ,  in_canels=1, choice=0):
     
     
 imgs_dir= r"C:\Users\Abed\Desktop\Tel aviv internship\Github\TreeDetection\Abed\experiements\pred_Unet"
-stitch(imgs_dir,imgs_dir, choice=2 )
+stitch(imgs_dir,imgs_dir,0.2, choice=0 )
