@@ -7,7 +7,7 @@ original_img_xy_re = ".*_(\d+)_(\d+)"
 tiles_xy_re = ".*__(\d+)_(\d+)__"
         
 
-def stitch(dir_path, in_canels=1, choice=0):
+def stitch(dir_path, save_path ,  in_canels=1, choice=0):
     """
     function stitches together tiles to repreduce the original image
 
@@ -50,30 +50,27 @@ def stitch(dir_path, in_canels=1, choice=0):
     
     
     # we take a sample to extract tile information such as height, width, type
-    first = os.listdir(directory)[0]  
+    # original image name
+    sample = os.listdir(directory)[0]  
     
-    im = Image.open(dir_path + '\\' + first)
+    im = Image.open(dir_path + '\\' + sample)
 
     tile_h = np.array(im).shape[0]
     tile_w = np.array(im).shape[1]
-    print("tile hieght is " + str(tile_h))
-    print("tile width is " + str(tile_w))
-    print("formate of tile is " + str(im.format_description))
-    file_type = first.split(".")[-1]
+    file_type = sample.split(".")[-1]
+    original_name = ((sample[::-1]).split("_", 2))[-1][::-1]
+
     
     Original_width  = max_x - min_x + tile_w
     Original_height = max_y - min_y + tile_h
-    print("original image hieght is " + str(Original_height))
-    print("original image width is " + str(Original_width))
 
+    #we create an NumPy array to stitch all tiles to.
     if(in_canels == 1):
-        # creating array to merge all tiles to
         if choice == 2:     # if we choose AND
             output_array = np.ones((Original_height, Original_width))
         else:               # if we choose OR,  replace
             output_array = np.zeros((Original_height, Original_width))
     else:
-        # creating array to merge all tiles to
         if choice == 2:     # if we choose AND
             output_array = np.ones((Original_height, Original_width , in_canels))
         else:               # if we choose OR,  replace
@@ -88,6 +85,8 @@ def stitch(dir_path, in_canels=1, choice=0):
 
 
         im = Image.open(dir_path + '\\' + filename)
+        
+        #copy tile  to output array, based on copying methid choosen
         if(in_canels == 1):
             if choice == 0:
                 output_array[y:y + tile_h, x:x + tile_w] = np.array(im)
@@ -109,11 +108,11 @@ def stitch(dir_path, in_canels=1, choice=0):
             
     # converting array to image and saving image
     output_im = Image.fromarray(output_array)
-    file_name = "original." + file_type
-    path = dir_path + '\\' + file_name
+    file_name = original_name+ "." + file_type
+    path = save_path + '\\' + file_name
     output_im.save(path)
 
     
     
-imgs_dir= r"C:\Users\Abed\Desktop\Tel aviv internship\experiements\pred_Unet"
-stitch(imgs_dir,choice=2)
+imgs_dir= r"C:\Users\Abed\Desktop\Tel aviv internship\Github\TreeDetection\Abed\experiements\pred_Unet"
+stitch(imgs_dir,imgs_dir, choice=2 )
