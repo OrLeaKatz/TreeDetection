@@ -113,6 +113,8 @@ def stitch(dir_path, save_path , pixel_size,  in_canels=1, choice=0):
     output_im.save(path)
 
     
-    
-imgs_dir= r"C:\Users\Abed\Desktop\Tel aviv internship\Github\TreeDetection\Abed\experiements\pred_Unet"
-stitch(imgs_dir,imgs_dir,0.2, choice=0 )
+if __name__ == '__main__':    
+        # this lines will run only if we are running this file directly
+        # if we import the module then it will be ignored
+        imgs_dir= r"C:\Users\Abed\Desktop\Tel aviv internship\Github\TreeDetection\Abed\experiements\pred_Unet"
+        stitch(imgs_dir,imgs_dir,0.2, choice=0 )
