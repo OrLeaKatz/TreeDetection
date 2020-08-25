@@ -137,9 +137,9 @@ def crop_img(img_path, tile_x, tile_y , save_path):
     img_path : string
         full image path to crop.
     tile_x : int
-        outpud image width.
+        output images width.
     tile_y : int
-        outpud image height.
+        output images height.
     save_path : save
         a path to save all crops of image.
 
@@ -189,11 +189,7 @@ def crop_img(img_path, tile_x, tile_y , save_path):
         
         
         
-original_img_xy_re = ".*_(\d+)_(\d+)"
-tiles_xy_re = ".*__(\d+)_(\d+)__"
-        
-# three options and=2 , or=1 , replace = 0
-def stitch(dir_path, in_canels=1, choice=0):
+def stitch(dir_path, save_path , pixel_size,  in_canels=1, choice=0):
     """
     function stitches together tiles to repreduce the original image
 
@@ -217,66 +213,86 @@ def stitch(dir_path, in_canels=1, choice=0):
     None.
 
     """
+    
     directory = dir_path
-    array = []  # array used to create matrix
-
-    p = re.compile(tiles_xy_re)
-    q = re.compile(original_img_xy_re)
-
-    sum_of_files = len(os.listdir(directory))
-    tiles_horizontal_num = 0
-
-    first = os.listdir(directory)[0]  # we take a sample to extract
-    # original image information such as height, width, type
-
-    original = q.match(first)
-    Original_width, Original_height = int(original.group(1)), int(
-        original.group(2))
-    im = Image.open(dir_path + '\\' + first)
+    p_list = []
+    
+    #extracting x, y of each tile and adding it to an array
+    for filename in os.listdir(directory):
+        
+        tmp = (filename.split(".")[0]).split('_')
+        p_list.append((int(tmp[-2]),int(tmp[-1])))
+        
+    #extract maximum and minimum  x , y to calculate original image 
+    #height and width
+    max_x = max(p_list)[0]
+    min_x = min(p_list)[0]
+    max_y = max(p_list)[1]
+    min_y = min(p_list)[1]
+    
+    
+    # we take a sample to extract tile information such as height, width, type
+    # original image name
+    sample = os.listdir(directory)[0]  
+    
+    im = Image.open(dir_path + '\\' + sample)
 
     tile_h = np.array(im).shape[0]
-    tile_w= np.array(im).shape[1]
-    file_type = first.split(".")[-1]
+    tile_w = np.array(im).shape[1]
+    file_type = sample.split(".")[-1]
+    original_name = ((sample[::-1]).split("_", 2))[-1][::-1]
 
-    # creating array to merge all tiles to
-    if choice == 2:  # if we choose and
-        output_array = np.ones((Original_height, Original_width, in_canels))
+    
+    Original_width  = int((max_x - min_x + tile_w)/pixel_size)
+    Original_height = int((max_y - min_y + tile_h)/pixel_size)
+
+    #we create an NumPy array to stitch all tiles to.
+    if(in_canels == 1):
+        if choice == 2:     # if we choose AND
+            output_array = np.ones((Original_height, Original_width))
+        else:               # if we choose OR,  replace
+            output_array = np.zeros((Original_height, Original_width))
     else:
-        output_array = np.zeros((Original_height, Original_width, in_canels))
+        if choice == 2:     # if we choose AND
+            output_array = np.ones((Original_height, Original_width , in_canels))
+        else:               # if we choose OR,  replace
+            output_array = np.zeros((Original_height, Original_width , in_canels))
 
     for filename in os.listdir(directory):
 
-        xy = p.match(filename)
-        x, y = int(xy.group(1)), int(xy.group(2))  # extracting x,y relative
-        # to original img
+        #extraxt x, y of tile relative to original
+        tmp = (filename.split(".")[0]).split('_')
+        x = int((int(tmp[-2]) - min_x)/pixel_size)
+        y = int((int(tmp[-1]) - min_y)/pixel_size)
+        print(str(x)+", "+str(y))
 
         im = Image.open(dir_path + '\\' + filename)
-        if choice == 0:
-            output_array[y:y + tile_h, x:x + tile_w, :] = np.array(im)
-        elif choice == 1:
-            output_array[y:y + tile_h, x:x + tile_w, :] = np.logical_or(
-                output_array[y:y + tile_h, x:x + tile_w, :], np.array(im))
-        elif choice == 2:
-            output_array[y:y + tile_h, x:x + tile_w, :] = np.logical_and(
-                output_array[y:y + tile_h, x:x + tile_w, :], np.array(im))
-
-        output_array[y:y + tile_h, x:x + tile_w, :] = np.array(im)
-
-        array.append([x, y])
-
-        if int(xy.group(1)) == 0:
-            tiles_horizontal_num = tiles_horizontal_num + 1
-
+        
+        #copy tile  to output array, based on copying methid choosen
+        if(in_canels == 1):
+            if choice == 0:
+                output_array[y:y + tile_h, x:x + tile_w] = np.array(im)
+            elif choice == 1:
+                output_array[y:y + tile_h, x:x + tile_w] = np.logical_or(
+                    output_array[y:y + tile_h, x:x + tile_w], np.array(im))
+            elif choice == 2:
+                output_array[y:y + tile_h, x:x + tile_w] = np.logical_and(
+                    output_array[y:y + tile_h, x:x + tile_w], np.array(im))
+        else:
+            if choice == 0:
+                output_array[y:y + tile_h, x:x + tile_w, :] = np.array(im)
+            elif choice == 1:
+                output_array[y:y + tile_h, x:x + tile_w, :] = np.logical_or(
+                     np.array(im) , output_array[y:y + tile_h, x:x + tile_w, :])
+            elif choice == 2:
+                output_array[y:y + tile_h, x:x + tile_w, :] = np.logical_and(
+                    output_array[y:y + tile_h, x:x + tile_w, :], np.array(im))
+            
     # converting array to image and saving image
-    output_im = Image.fromarray(output_array.astype(np.uint8))
-    file_name = "original." + file_type
-    path = dir_path + '\\' + file_name
+    output_im = Image.fromarray(output_array)
+    file_name = original_name+ "." + file_type
+    path = save_path + '\\' + file_name
     output_im.save(path)
-
-    # array = sorted(array, key=lambda k: [k[0], k[1]])
-    # numpy_array = np.array(array)
-    # matrix = numpy_array.reshape(sum_of_files // tiles_horizontal_num,
-    #                              tiles_horizontal_num, 2)
     
     
     
